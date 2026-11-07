@@ -1,0 +1,19 @@
+configuration:
+  jellyfin_url:
+    name: Jellyfin URL
+    description: Address of your Jellyfin server, e.g. http://2937404c-jellyfin:8096 for the Jellyfin add-on.
+  api_key:
+    name: API key
+    description: Create one in Jellyfin under Dashboard → API Keys.
+  poll_interval:
+    name: Poll interval
+    description: Seconds between checks of what is playing.
+  min_watch_percent:
+    name: Minimum watched (%)
+    description: How much of a movie or episode must be watched before it counts. 30 minutes always counts.
+  video_folders:
+    name: Video folders
+    description: Folders holding e.g. downloaded YouTube videos. Movies in them count as videos, grouped by channel (studio in the .nfo). One folder per line, e.g. "Youtube".
+  user_map:
+    name: User mapping
+    description: Links Home Assistant users to Jellyfin users when their names differ. One line per user, e.g. "christian=Tntdruid".

@@ -1,0 +1,19 @@
+configuration:
+  jellyfin_url:
+    name: Jellyfin URL
+    description: Adressen på din Jellyfin-server, fx http://2937404c-jellyfin:8096 for Jellyfin-add-on'et.
+  api_key:
+    name: API-nøgle
+    description: Opret den i Jellyfin under Kontrolpanel → API-nøgler.
+  poll_interval:
+    name: Opdateringsinterval
+    description: Sekunder mellem hvert tjek af, hvad der afspilles.
+  min_watch_percent:
+    name: Minimum set (%)
+    description: Hvor meget af en film eller et afsnit der skal ses, før det tæller som set. 30 minutter tæller altid.
+  video_folders:
+    name: Videomapper
+    description: Mapper med fx hentede YouTube-videoer. Film herfra tælles som videoer og grupperes efter kanal (studio i .nfo-filen). Én mappe pr. linje, fx "Youtube".
+  user_map:
+    name: Brugerkobling
+    description: Kobler Home Assistant-brugere til Jellyfin-brugere, når navnene er forskellige. Én linje pr. bruger, fx "christian=Tntdruid".

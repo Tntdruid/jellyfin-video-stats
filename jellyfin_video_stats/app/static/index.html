@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Videostatistik</title>
+  <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <h1>Videostatistik</h1>
+      <span id="status" class="status" title="">●</span>
+    </div>
+    <nav class="seg" id="nav">
+      <a href="#/" data-view="dashboard">Oversigt</a>
+      <a href="#/tech" data-view="tech">Afspilning</a>
+      <a href="#/wrapped" data-view="wrapped">Wrapped</a>
+      <a href="#/compare" data-view="compare">Sammenlign</a>
+    </nav>
+    <div class="controls">
+      <div class="seg" id="range">
+        <button data-range="7">7 dage</button>
+        <button data-range="30" class="on">30 dage</button>
+        <button data-range="90">90 dage</button>
+        <button data-range="year">I år</button>
+        <button data-range="all">Alt</button>
+      </div>
+      <select id="wrapped-year" hidden></select>
+      <select id="user"><option value="">Alle brugere</option></select>
+      <a id="export" class="btn" href="api/export.csv" download title="Hent afspilningerne i perioden som CSV">↓ CSV</a>
+    </div>
+  </header>
+
+  <main>
+   <section id="now" class="now" hidden></section>
+
+   <div id="view-detail" class="view" hidden>
+    <a href="#/" class="back" onclick="if (history.length > 1) { history.back(); return false; }">← Tilbage</a>
+    <section class="hero" id="detail-hero"></section>
+    <section class="kpis" id="detail-kpis"></section>
+    <div class="grid two">
+      <section class="card"><div class="card-head"><h2>Seetid pr. måned</h2><span class="hint">timer</span></div><div id="detail-months" class="chart"></div></section>
+      <section class="card"><div class="card-head"><h2>Hvornår på døgnet?</h2></div><div id="detail-hours" class="chart"></div></section>
+    </div>
+    <div class="grid two">
+      <section class="card"><div class="card-head"><h2 id="detail-items-title">Afsnit</h2><span class="hint" id="detail-items-hint"></span></div><ol id="detail-items" class="top"></ol></section>
+      <section class="card"><div class="card-head"><h2>Hvem har set med?</h2></div><ol id="detail-viewers" class="top"></ol></section>
+    </div>
+   </div>
+
+   <div id="view-wrapped" class="view" hidden></div>
+
+   <div id="view-tech" class="view" hidden>
+    <section class="kpis" id="tech-kpis"></section>
+    <div class="grid two">
+      <section class="card"><div class="card-head"><h2>Afspilningsmetode</h2></div><div id="tech-methods" class="chart"></div></section>
+      <section class="card"><div class="card-head"><h2>Klienter</h2><span class="hint">andel transcodet</span></div><div id="tech-clients" class="chart"></div></section>
+    </div>
+    <div class="grid three">
+      <section class="card"><div class="card-head"><h2>Hvorfor transcodes der?</h2></div><ol id="tech-reasons" class="plainlist"></ol></section>
+      <section class="card"><div class="card-head"><h2>Opløsning</h2></div><div id="tech-res" class="chart small"></div></section>
+      <section class="card"><div class="card-head"><h2>Sprog</h2></div><div id="tech-lang" class="langs"></div></section>
+    </div>
+   </div>
+
+   <div id="view-compare" class="view" hidden>
+    <div id="compare-pairs"></div>
+    <div id="compare-people" class="grid people"></div>
+    <section class="card">
+      <div class="card-head"><h2>Seetid over tid</h2><span class="hint">timer</span></div>
+      <div id="compare-chart" class="chart"></div>
+    </section>
+   </div>
+
+   <div id="view-dashboard" class="view">
+
+    <section class="kpis" id="kpis"></section>
+
+    <div class="grid two">
+      <section class="card">
+        <div class="card-head">
+          <h2>Seetid over tid</h2>
+          <div class="seg small" id="bucket">
+            <button data-bucket="day">Dag</button>
+            <button data-bucket="week">Uge</button>
+            <button data-bucket="month">Måned</button>
+          </div>
+        </div>
+        <div id="timeline" class="chart"></div>
+      </section>
+      <section class="card">
+        <div class="card-head"><h2>Indsigt</h2></div>
+        <ul id="insights" class="insights"></ul>
+      </section>
+    </div>
+
+    <div class="grid three">
+      <section class="card"><div class="card-head"><h2>Top serier</h2></div><ol id="top-series" class="top"></ol></section>
+      <section class="card"><div class="card-head"><h2>Top film</h2></div><ol id="top-movies" class="top"></ol></section>
+      <section class="card"><div class="card-head"><h2>Top skuespillere</h2></div><ol id="top-people" class="top"></ol></section>
+    </div>
+
+    <div class="grid two" id="video-row" hidden>
+      <section class="card"><div class="card-head"><h2>Top kanaler</h2><span class="hint">fx YouTube</span></div><ol id="top-channels" class="top"></ol></section>
+      <section class="card"><div class="card-head"><h2>Top videoer</h2></div><ol id="top-videos" class="top"></ol></section>
+    </div>
+
+    <div class="grid two">
+      <section class="card">
+        <div class="card-head"><h2>Genrer over tid</h2><span class="hint">andel af seetid</span></div>
+        <div id="genres" class="chart"></div>
+      </section>
+      <section class="card">
+        <div class="card-head"><h2>Hvornår ser du?</h2></div>
+        <div id="heatmap" class="chart"></div>
+      </section>
+    </div>
+
+    <section class="card">
+      <div class="card-head"><h2>Seneste afspilninger</h2></div>
+      <table class="recent"><tbody id="recent"></tbody></table>
+    </section>
+   </div>
+  </main>
+
+  <script src="static/echarts.min.js"></script>
+  <script src="static/app.js"></script>
+</body>
+</html>

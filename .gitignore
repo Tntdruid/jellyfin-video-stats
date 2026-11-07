@@ -1,0 +1,8 @@
+__pycache__/
+*.db
+*.db-shm
+*.db-wal
+dev/data/
+.venv/
+jellyfin_video_stats/app/static/echarts.min.js
+.claude/
