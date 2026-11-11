@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/logo.png" width="160" alt="Jellyfin Video Stats logo"></p>
+
 <h1 align="center">Jellyfin Video Stats</h1>
 
 <p align="center"><a href="https://github.com/Tntdruid/jellyfin-video-stats/actions/workflows/ci.yaml"><img src="https://github.com/Tntdruid/jellyfin-video-stats/actions/workflows/ci.yaml/badge.svg" alt="CI"></a></p>
