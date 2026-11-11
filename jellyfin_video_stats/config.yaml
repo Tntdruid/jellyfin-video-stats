@@ -1,5 +1,5 @@
 name: Jellyfin Video Stats
-version: "0.2.0"
+version: "0.3.0"
 slug: jellyfin_video_stats
 description: Seerstatistik for film og serier i Jellyfin – top-lister, binge, heatmap og transcoding
 url: https://github.com/Tntdruid/jellyfin-video-stats

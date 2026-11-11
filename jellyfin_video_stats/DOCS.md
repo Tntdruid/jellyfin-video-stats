@@ -32,6 +32,17 @@ Kører Jellyfin som add-on på samme maskine, kan du bruge Home Assistants IP-ad
 - **Binge** er flest afsnit af samme serie, som én bruger har set på én dag.
 - **Transcoding** registreres, hvis Jellyfin på noget tidspunkt under afspilningen transcodede videoen. Fanen **Afspilning** viser, hvilke klienter der transcoder, og hvorfor.
 
+## Fremdrift i serier
+
+Add-on'et henter hele afsnitslisten for de serier, der er set i, så det kan vise, hvor langt du er:
+
+- **Fortsæt med at se** på oversigten: serier i gang med næste afsnit, hvor mange der er tilbage, og hvor lang tid det tager.
+- **Gjort færdig**: serier, hvor alle afsnit er set. Fortsætter serien i Jellyfin, står der "Ajour – venter på nye afsnit".
+- **Seriesiden**: fremdrift i procent, en bjælke pr. sæson og alle afsnit, også dem du ikke har set endnu (vises nedtonet).
+- **Wrapped** viser, hvilke serier du har set færdige i løbet af året.
+
+Et afsnit tæller som set, hvis add-on'et har registreret det, eller hvis det er markeret som set i Jellyfin. Så tæller afsnit, du så før add-on'et, eller som du selv har markeret, også med. Specials (sæson 0) og afsnit, der mangler i biblioteket, tælles ikke. Listerne opdateres hver 12. time og kort efter, at et afsnit er set. Fremdriften viser, hvordan det står lige nu, og afhænger ikke af den valgte periode.
+
 ## Gammel historik fra Playback Reporting
 
 Bruger du Jellyfins **Playback Reporting**-plugin, har det logget dine afspilninger, siden det blev installeret. Første gang add-on'et starter, henter det automatisk den historik, så statistikken også dækker tiden før add-on'et. Du kan se status og importere igen under fanen **Afspilning** nederst.

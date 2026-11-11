@@ -390,8 +390,12 @@ def insights(scope: Scope) -> list:
 
     forgotten = _forgotten_series(scope)
     if forgotten:
-        out.append({"icon": "pause", "text": f"Glemt? Du så {forgotten['episodes']} afsnit af {forgotten['name']}, "
-                                              f"men sidst for {forgotten['days']} dage siden."})
+        import progress  # here, not at the top: progress builds on this module
+        p = (progress.series_progress(scope.user, forgotten["key"]) or [None])[0]
+        if not p or p["seen"] < p["total"]:  # a series that was simply finished isn't forgotten
+            left = f" Der er {p['total'] - p['seen']} afsnit tilbage." if p else ""
+            out.append({"icon": "pause", "text": f"Glemt? Du så {forgotten['episodes']} afsnit af {forgotten['name']}, "
+                                                  f"men sidst for {forgotten['days']} dage siden.{left}"})
 
     movies = db.query(f"{cte} SELECT COUNT(*) AS n, AVG(completed) AS r FROM p WHERE kind='movie'", params)[0]
     if movies["n"] >= 5 and movies["r"] is not None and movies["r"] < 0.8:
@@ -424,7 +428,7 @@ def _forgotten_series(scope: Scope, min_days: int = 45) -> Optional[dict]:
     """A series someone got into (3+ episodes) but hasn't touched for a while, as of the end of the range."""
     user_sql, user_params = user_filter(scope.user)
     rows = db.query(
-        f"""SELECT MAX(i.series_name) AS name, COUNT(DISTINCT p.item_id) AS episodes, MAX(p.started_at) AS last
+        f"""SELECT i.series_id AS key, MAX(i.series_name) AS name, COUNT(DISTINCT p.item_id) AS episodes, MAX(p.started_at) AS last
             FROM plays p JOIN items i USING(item_id)
             WHERE p.counted = 1 AND i.type = 'Episode' AND i.series_id IS NOT NULL AND p.started_at < ? {user_sql}
             GROUP BY i.series_id HAVING episodes >= 3 AND last < ? ORDER BY episodes DESC LIMIT 1""",

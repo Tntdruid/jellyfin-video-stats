@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Optional
 
 import db
+import progress
 import stats
 from stats import LOCAL, METHOD_DA, WEEKDAYS, Scope, episode_label
 
@@ -81,6 +82,18 @@ def detail(scope: Scope, kind: str, key: str) -> Optional[dict]:
             r["sub"] = episode_label(r)
         latest = db.query(f"{base} SELECT name, season_number, episode_number FROM ap ORDER BY started_at DESC LIMIT 1", params)[0]
         latest["episode"] = episode_label(latest)
+        prog = (progress.series_progress(scope.user, key) or [None])[0]
+        if prog:  # list every episode in the library, not only those watched in the period
+            watched = {r["key"]: r for r in items}
+            seen = set(prog.pop("seen_ids"))
+            items = [
+                {**watched.get(e["item_id"], {"plays": None, "minutes": None, "completed": 0}),
+                 "key": e["item_id"], "name": e["name"], "image_id": e["item_id"],
+                 "season_number": e["season_number"], "episode_number": e["episode_number"],
+                 "sub": episode_label(e), "seen": e["item_id"] in seen}
+                for e in db.query("""SELECT * FROM series_episodes WHERE series_id = ?
+                                     ORDER BY season_number, episode_number""", [key])
+            ]
     elif kind == "channel":
         items = db.query(
             f"""{base} SELECT item_id AS key, MAX(name) AS name, COUNT(*) AS plays, SUM(watched)/60.0 AS minutes,
@@ -103,6 +116,8 @@ def detail(scope: Scope, kind: str, key: str) -> Optional[dict]:
     else:
         items = _cast(key)
         latest = None
+    if kind != "series":
+        prog = None
 
     month_map = {r["b"]: round(r["n"], 1) for r in months}
     labels = stats._bucket_range(Scope(max(scope.start, first or scope.start), scope.end, scope.user), "month")
@@ -118,6 +133,7 @@ def detail(scope: Scope, kind: str, key: str) -> Optional[dict]:
         "share": totals["minutes"] / all_minutes,
         "list": items,
         "latest": latest,
+        "progress": prog,
         "viewers": viewers,
         "months": {"labels": labels, "hours": [month_map.get(l, 0) for l in labels]},
         "hours": [hour_counts.get(h, 0) for h in range(24)],
@@ -221,6 +237,8 @@ def wrapped(year: int, user: Optional[str]) -> dict:
         "top_movies": stats.top(scope, "movies", 5),
         "top_people": stats.top(scope, "people", 5),
         "top_channels": stats.top(scope, "channels", 5),
+        "finished_series": [{"key": r["key"], "name": r["name"], "total": r["total"]}
+                            for r in progress.finished_in(user, start, end)],
         "genres": [{"name": k, "n": v} for k, v in list(genres.items())[:5]],
         "months": months,
         "peak": {"hour": peak[0], "weekday": WEEKDAYS[peak[1]]},

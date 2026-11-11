@@ -51,6 +51,32 @@ CREATE INDEX IF NOT EXISTS idx_plays_item ON plays(item_id);
 CREATE INDEX IF NOT EXISTS idx_plays_user ON plays(user_id);
 CREATE INDEX IF NOT EXISTS idx_items_series ON items(series_id);
 
+-- every episode a series has in the library (not just the watched ones), for progress
+CREATE TABLE IF NOT EXISTS series_episodes (
+    item_id        TEXT PRIMARY KEY,
+    series_id      TEXT NOT NULL,
+    season_number  INTEGER,
+    episode_number INTEGER,
+    name           TEXT,
+    duration       REAL
+);
+CREATE INDEX IF NOT EXISTS idx_series_episodes ON series_episodes(series_id);
+
+CREATE TABLE IF NOT EXISTS series_info (
+    series_id    TEXT PRIMARY KEY,
+    name         TEXT,
+    status       TEXT,     -- Continuing | Ended, as Jellyfin has it
+    refreshed_at INTEGER   -- 0 = refresh soon
+);
+
+-- Jellyfin's own "played" mark per user, which also covers what was watched before the add-on or marked by hand
+CREATE TABLE IF NOT EXISTS episode_played (
+    user_id     TEXT NOT NULL,
+    item_id     TEXT NOT NULL,
+    last_played INTEGER,
+    PRIMARY KEY (user_id, item_id)
+);
+
 CREATE TABLE IF NOT EXISTS meta (
     key   TEXT PRIMARY KEY,
     value TEXT

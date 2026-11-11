@@ -39,6 +39,7 @@
     <a href="#/" class="back" onclick="if (history.length > 1) { history.back(); return false; }">← Tilbage</a>
     <section class="hero" id="detail-hero"></section>
     <section class="kpis" id="detail-kpis"></section>
+    <section class="card" id="detail-progress" hidden></section>
     <div class="grid two">
       <section class="card"><div class="card-head"><h2>Seetid pr. måned</h2><span class="hint">timer</span></div><div id="detail-months" class="chart"></div></section>
       <section class="card"><div class="card-head"><h2>Hvornår på døgnet?</h2></div><div id="detail-hours" class="chart"></div></section>
@@ -100,6 +101,11 @@
         <div class="card-head"><h2>Indsigt</h2></div>
         <ul id="insights" class="insights"></ul>
       </section>
+    </div>
+
+    <div class="grid two" id="progress-row" hidden>
+      <section class="card"><div class="card-head"><h2>Fortsæt med at se</h2><span class="hint">uanset periode</span></div><ol id="continue" class="progress-list"></ol></section>
+      <section class="card"><div class="card-head"><h2>Gjort færdig</h2><span class="hint" id="finished-hint"></span></div><ol id="finished" class="progress-list"></ol></section>
     </div>
 
     <div class="grid three">

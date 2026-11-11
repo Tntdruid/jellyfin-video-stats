@@ -14,6 +14,7 @@ import httpx
 
 import db
 import images
+import progress
 from config import Settings
 from jellyfin import (TICKS_PER_SECOND, VIDEO_TYPES, JellyfinClient, as_video, merge_series, set_channel, tech_of,
                       to_item)
@@ -191,6 +192,8 @@ class Collector:
             **play.tech,
         })
         self.state.plays_recorded += 1
+        if play.item.get("type") == "Episode":
+            progress.mark_stale(play.item.get("series_id"))  # new episodes may have arrived too
         log.info("gemt: '%s' (%s) – %d min set, %s", play.item.get("name"), play.user_name, watched // 60,
                  "talt som set" if watched >= needed else "kun kigget")
 

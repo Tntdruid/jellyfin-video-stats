@@ -199,6 +199,24 @@ nav.seg a.on { background: var(--accent-soft); color: var(--accent); font-weight
   .wr-star { flex-direction: column; align-items: flex-start; }
 }
 
+/* --- series progress --- */
+.progress-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.progress-list li { padding: 6px 0; }
+.progress-list a.row { display: flex; gap: 12px; align-items: center; color: inherit; text-decoration: none; min-width: 0; }
+.progress-list a.row:hover .name { color: var(--accent); }
+.progress-list .meta { flex: 1; min-width: 0; }
+.progress-list .name, .progress-list .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.progress-list .sub { color: var(--muted); font-size: 12px; }
+.meter { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; margin: 4px 0; }
+.meter div { height: 100%; background: linear-gradient(90deg, #b4233a, #f59e0b); }
+.progress-head { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+.progress-head .pct { font-size: 40px; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+.progress-head .sub { color: var(--muted); }
+.seasons { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px 20px; margin-top: 14px; }
+.season { display: grid; grid-template-columns: 64px 1fr auto; gap: 8px; align-items: center; font-size: 13px; }
+.season .meter { margin: 0; }
+.top li.unseen { opacity: .45; }
+
 .import-row { display: flex; gap: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
 .import-row #import-status { flex: 1; min-width: 240px; }
 button.btn { font: inherit; cursor: pointer; padding: 7px 14px; }

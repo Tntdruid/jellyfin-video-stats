@@ -54,6 +54,17 @@ class JellyfinClient:
         r.raise_for_status()
         return r.json().get("Items", [])
 
+    async def episodes(self, series_id: str, user_id: Optional[str]) -> Optional[list]:
+        """All episodes of a series, with the user's played mark when a user is given; None if the series is gone."""
+        params = {"fields": "UserData", "enableImages": "false"}
+        if user_id:
+            params["userId"] = user_id
+        r = await self.client.get(f"/Shows/{series_id}/Episodes", params=params)
+        if r.status_code in (400, 404):
+            return None
+        r.raise_for_status()
+        return r.json().get("Items", [])
+
     async def users(self) -> list:
         r = await self.client.get("/Users")
         r.raise_for_status()

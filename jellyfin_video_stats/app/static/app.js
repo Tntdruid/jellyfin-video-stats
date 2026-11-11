@@ -318,6 +318,7 @@ async function loadDashboard() {
     api("top", { kind: "channels" }), api("top", { kind: "videos" }),
     api("genres", { bucket: trend }), api("heatmap"), api("insights"), api("recent"),
   ]);
+  api("progress").then(renderProgress).catch(console.error);
   $("#video-row").hidden = !channels.length;
   renderTop("top-channels", channels, (r) => channelLink(r.key), "face");
   renderTop("top-videos", videos, (r) => channelLink(r.channel_id), "thumb");
@@ -330,6 +331,52 @@ async function loadDashboard() {
   renderHeatmap(heat);
   renderInsights(insights);
   renderRecent(recent);
+}
+
+// --- series progress ------------------------------------------------------------
+
+const shortDate = (t) => new Date(t * 1000).toLocaleDateString("da-DK", { day: "numeric", month: "short", year: "numeric" });
+const meter = (share) => `<div class="meter"><div style="width:${Math.round(share * 100)}%"></div></div>`;
+
+function renderProgress(p) {
+  $("#progress-row").hidden = !p.continue.length && !p.finished.length;
+  const row = (r, body) => `
+    <li><a class="row" href="${esc(seriesLink(r.key))}">
+      ${cover(r.image_id, r.name, "poster")}
+      <div class="meta"><div class="name">${esc(r.name)}</div>${body}</div>
+    </a></li>`;
+  $("#continue").innerHTML = p.continue.length ? p.continue.slice(0, 8).map((r) => row(r, `
+      <div class="sub">${r.next ? `Næste: ${esc(r.next.episode)} · ${esc(r.next.name)}` : "&nbsp;"}</div>
+      ${meter(r.share)}
+      <div class="sub">${fmt(r.seen)} af ${fmt(r.total)} afsnit · ${fmt(r.total - r.seen)} tilbage (${hrs(r.remaining_minutes)})</div>`)).join("")
+    : `<div class="empty">Ingen serier i gang</div>`;
+  $("#finished").innerHTML = p.finished.length ? p.finished.slice(0, 8).map((r) => row(r, `
+      <div class="sub">${fmt(r.total)} afsnit${r.last ? ` · sidste set ${shortDate(r.last)}` : ""}</div>
+      <div class="sub">${r.status === "Continuing" ? "⏳ Ajour – venter på nye afsnit" : "✅ Hele serien set"}</div>`)).join("")
+    : `<div class="empty">Ingen serier set helt færdige endnu</div>`;
+  $("#finished-hint").textContent = p.finished.length ? `${fmt(p.finished.length)} serier` : "";
+}
+
+function renderSeriesProgress(p) {
+  const el = $("#detail-progress");
+  el.hidden = !p;
+  if (!p) return;
+  const state = p.seen >= p.total
+    ? (p.status === "Continuing" ? "Du er ajour – serien fortsætter" : "Du har set hele serien")
+    : p.next ? `Næste afsnit: <strong>${esc(p.next.episode)} · ${esc(p.next.name)}</strong>` : "";
+  el.innerHTML = `
+    <div class="card-head"><h2>Fremdrift</h2><span class="hint">uanset periode · tæller også afsnit markeret som set i Jellyfin</span></div>
+    <div class="progress-head">
+      <div class="pct">${fmt(p.share * 100)} %</div>
+      <div style="flex:1;min-width:220px">
+        <div>${fmt(p.seen)} af ${fmt(p.total)} afsnit set${p.seen < p.total ? ` · ${hrs(p.remaining_minutes)} tilbage` : ""}</div>
+        ${meter(p.share)}
+        <div class="sub" style="margin-top:6px">${state}</div>
+      </div>
+    </div>
+    <div class="seasons">${p.seasons.map((s) => `
+      <div class="season"><span>Sæson ${s.season ?? "?"}</span>${meter(s.seen / s.total)}<span class="muted">${s.seen}/${s.total}</span></div>`).join("")}
+    </div>`;
 }
 
 // --- tech page ----------------------------------------------------------------
@@ -485,12 +532,15 @@ async function loadDetail(kind, key) {
 
   $("#detail-items-title").textContent = KIND_TEXT[kind].list;
   $("#detail-items-hint").textContent = KIND_TEXT[kind].hint;
+  renderSeriesProgress(a.progress);
   if (kind === "series") {
     a.list.forEach((r) => {
       r.name = r.sub ? `${r.sub} · ${r.name}` : r.name;
-      r.sub = r.completed ? "set færdig" : "ikke set færdig";
+      r.sub = r.seen === false ? "ikke set" : r.plays == null ? "set (før perioden eller markeret i Jellyfin)"
+        : r.completed ? "set færdig" : "set, men ikke færdig";
     });
     renderTop("detail-items", a.list, null, "thumb");
+    document.querySelectorAll("#detail-items li").forEach((li, i) => li.classList.toggle("unseen", a.list[i].seen === false));
   } else if (kind === "channel") {
     renderTop("detail-items", a.list, null, "thumb");
   } else if (kind === "movie") {
@@ -532,6 +582,9 @@ async function loadWrapped() {
     fact("Travleste dag", day(w.busiest_day.d), `${hrs(w.busiest_day.minutes)} foran skærmen på én dag.`),
     w.longest_session && fact("Længste session", hrs(w.longest_session.minutes),
       `${fmt(w.longest_session.items)} film og afsnit i træk den ${longDate(w.longest_session.start)}.`),
+    w.finished_series.length && fact("Gjort færdig",
+      w.finished_series.length === 1 ? "1 serie" : `${fmt(w.finished_series.length)} serier`,
+      `set helt til ende: ${w.finished_series.slice(0, 4).map((s) => esc(s.name)).join(", ")}${w.finished_series.length > 4 ? " m.fl." : ""}.`),
     w.rewatch && fact("Genset", esc(w.rewatch.name), `Set ${w.rewatch.n} gange i løbet af året.`),
     fact("Årets første", esc(fw.title), `${fw.kind === "series" ? `${esc(fw.episode)} · ` : fw.kind === "video" ? `${esc(fw.name)} · ` : ""}${longDate(fw.started_at)}.`),
     w.genres[0] && fact("Årets genre", esc(w.genres[0].name), runnersUp ? `Efterfulgt af ${runnersUp}.` : ""),

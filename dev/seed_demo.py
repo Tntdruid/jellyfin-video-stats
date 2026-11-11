@@ -156,4 +156,22 @@ for day in range(400, -1, -1):
                     break
 
 db.execute("DELETE FROM plays WHERE started_at > ?", [int(now)])
+
+# what the progress refresher would have fetched from Jellyfin: full episode lists, some with seasons not watched yet
+for table in ("series_episodes", "series_info", "episode_played"):
+    db.execute(f"DELETE FROM {table}")
+EXTRA_SEASONS = {0: 1, 5: 1}  # Havnebyen and Nattevagten got a new season nobody has started
+STATUS = {0: "Continuing", 1: "Ended", 2: "Ended", 3: "Ended", 4: "Continuing", 5: "Continuing"}
+for si, (name, genres, seasons, per, minutes) in enumerate(SERIES):
+    db.execute("INSERT INTO series_info (series_id, name, status, refreshed_at) VALUES (?,?,?,?)",
+               [f"ser{si}", name, STATUS[si], int(now)])
+    for s in range(1, seasons + 1 + EXTRA_SEASONS.get(si, 0)):
+        for e in range(1, per + 1):
+            db.execute("INSERT INTO series_episodes VALUES (?,?,?,?,?,?)",
+                       [f"ep{si}x{s}x{e}", f"ser{si}", s, e, f"Afsnit {e}", minutes * 60])
+# the guest marked the first season of Den Sidste Vinter as watched by hand in Jellyfin
+for e in range(1, 7):
+    db.execute("INSERT OR REPLACE INTO episode_played VALUES ('u2', ?, NULL)", [f"ep3x1x{e}"])
+# and the first episodes of Nattevagten exist, but the last ones haven't been reached by anyone
+db.execute("DELETE FROM plays WHERE item_id IN ('ep5x2x6','ep5x2x7','ep5x2x8')")
 print(db.query("SELECT COUNT(*) AS n FROM plays")[0]["n"], "plays seeded")

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+- Fremdrift i serier: "Fortsæt med at se" med næste afsnit og tid tilbage, "Gjort færdig" og fremdrift pr. sæson på seriesiden, hvor alle afsnit vises, også de usete.
+- Afsnit, der er markeret som set i Jellyfin, tæller med i fremdriften.
+- Wrapped viser de serier, der er set færdige i løbet af året. Indsigten om glemte serier fortæller, hvor mange afsnit der er tilbage, og springer serier over, der er set færdige.
+
 ## 0.2.0
 
 - Importerer gammel historik fra Jellyfins Playback Reporting-plugin automatisk ved første start. Status og "Importér igen" findes under fanen Afspilning. Dubletter springes over, og slettede film og afsnit kommer med under deres gemte navn.

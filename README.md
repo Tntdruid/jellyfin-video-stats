@@ -4,6 +4,7 @@ Home Assistant-add-on med seerstatistik for film og serier i Jellyfin. Det er vi
 
 - Henter gammel historik fra Playback Reporting-pluginet, så statistikken ikke starter fra nul
 - Seetid pr. dag, uge og måned, delt op i film og serier og sammenlignet med forrige periode
+- Fremdrift i serier: "Fortsæt med at se" med næste afsnit, serier gjort færdige og fremdrift pr. sæson
 - Top serier, film og skuespillere med plakater, der gemmes lokalt og overlever, at filen slettes
 - YouTube- og andre videoer grupperet efter kanal
 - Genrer over tid og heatmap over, hvornår du ser

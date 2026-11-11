@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 
 import db
 import images
+import progress
 import stats
 import views
 from collector import Collector
@@ -39,6 +40,7 @@ async def lifespan(app: FastAPI):
         state.update(client=client, collector=collector)
         task = asyncio.create_task(collector.run())
         log.info("collecting from %s every %ss", settings.jellyfin_url, settings.poll_interval)
+        state["refresh_task"] = asyncio.create_task(progress.Refresher(client).run())
         state["importer"] = Importer(settings, client)
         if not db.get_meta("import_playback_reporting"):  # first start: pull in history once, if the plugin is there
             state["import_task"] = asyncio.create_task(state["importer"].run())
@@ -47,6 +49,7 @@ async def lifespan(app: FastAPI):
     yield
     if task:
         task.cancel()
+        state["refresh_task"].cancel()
         state["collector"].flush()
         await state["client"].close()
 
@@ -115,8 +118,8 @@ def now_playing():
 @app.get("/api/latest")
 def latest():
     """Cheap change marker; the page polls it and reloads its data when it moves."""
-    row = db.query("SELECT MAX(id) AS play, COUNT(*) AS n FROM plays")[0]
-    return {"marker": f"{row['play']}-{row['n']}"}
+    row = db.query("SELECT MAX(id) AS play, COUNT(*) AS n, (SELECT MAX(refreshed_at) FROM series_info) AS progress FROM plays")[0]
+    return {"marker": f"{row['play']}-{row['n']}-{row['progress']}"}
 
 
 @app.get("/api/summary")
@@ -155,6 +158,12 @@ def tech(start: Optional[int] = None, end: Optional[int] = None, user: Optional[
 @app.get("/api/recent")
 def recent(start: Optional[int] = None, end: Optional[int] = None, user: Optional[str] = None):
     return stats.recent(scope(start, end, user))
+
+
+@app.get("/api/progress")
+def series_progress(user: Optional[str] = None):
+    """Not limited to the selected period: it is how far people are right now."""
+    return progress.overview(user or None)
 
 
 @app.get("/api/insights")
