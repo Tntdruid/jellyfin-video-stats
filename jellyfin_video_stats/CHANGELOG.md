@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.0
+
+- Importerer gammel historik fra Jellyfins Playback Reporting-plugin automatisk ved første start. Status og "Importér igen" findes under fanen Afspilning. Dubletter springes over, og slettede film og afsnit kommer med under deres gemte navn.
+
 ## 0.1.0
 
 - Første version, bygget på samme grundlag som Jellyfin Music Stats.

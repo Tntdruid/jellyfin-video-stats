@@ -50,7 +50,17 @@ CREATE INDEX IF NOT EXISTS idx_plays_started ON plays(started_at);
 CREATE INDEX IF NOT EXISTS idx_plays_item ON plays(item_id);
 CREATE INDEX IF NOT EXISTS idx_plays_user ON plays(user_id);
 CREATE INDEX IF NOT EXISTS idx_items_series ON items(series_id);
+
+CREATE TABLE IF NOT EXISTS meta (
+    key   TEXT PRIMARY KEY,
+    value TEXT
+);
 """
+
+# columns added after 0.1.0; existing databases get them on start
+MIGRATIONS = [
+    ("plays", "source", "TEXT"),  # NULL = recorded by the collector, 'playback_reporting' = imported
+]
 
 DB_NAME = "video_stats.db"
 _lock = threading.Lock()
@@ -65,7 +75,22 @@ def connect() -> sqlite3.Connection:
         _conn.row_factory = sqlite3.Row
         _conn.execute("PRAGMA journal_mode=WAL")
         _conn.executescript(SCHEMA)
+        for table, column, kind in MIGRATIONS:
+            existing = {r["name"] for r in _conn.execute(f"PRAGMA table_info({table})")}
+            if column not in existing:
+                _conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {kind}")
+        _conn.commit()
     return _conn
+
+
+def get_meta(key: str) -> Optional[str]:
+    rows = query("SELECT value FROM meta WHERE key = ?", [key])
+    return rows[0]["value"] if rows else None
+
+
+def set_meta(key: str, value: str) -> None:
+    execute("INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            [key, value])
 
 
 def query(sql: str, params=()) -> list:
@@ -100,7 +125,7 @@ def upsert_item(it: dict) -> None:
 
 PLAY_COLS = ["item_id", "user_id", "user_name", "client", "device", "started_at", "ended_at", "watched", "duration",
              "progress", "counted", "completed", "play_method", "video_codec", "height", "audio_lang", "subtitle_lang",
-             "transcode_reasons"]
+             "transcode_reasons", "source"]
 
 
 def insert_play(p: dict) -> None:

@@ -372,6 +372,50 @@ async function loadTech() {
     return `<h3>${title}</h3>${rows.map((r) => `<div class="lrow"><span>${esc(lang(r.k))}</span><span class="muted">${fmt((r.n / sum) * 100)} %</span></div>`).join("") || `<div class="muted">–</div>`}`;
   };
   $("#tech-lang").innerHTML = langList("Lyd", t.audio) + langList("Undertekster", t.subtitles);
+  renderImport(state.meta);
+  if (state.meta.import.running) pollImport();
+}
+
+function renderImport(meta) {
+  const i = meta.import;
+  const el = $("#import-status"), btn = $("#import-btn");
+  btn.hidden = !i.enabled;
+  btn.disabled = i.running;
+  btn.textContent = i.running ? "Importerer…" : i.total ? "Importér igen" : "Importér historik";
+  let text;
+  if (!i.enabled) text = "Kræver, at add-on'et er forbundet til Jellyfin.";
+  else if (i.running) text = "Henter afspilninger fra Playback Reporting-pluginet…";
+  else if (i.error) text = `Importen fejlede: ${esc(i.error)}`;
+  else if (i.available === false) text = "Playback Reporting-pluginet er ikke installeret i Jellyfin. Installér det under Kontrolpanel → Plugins, hvis du vil have historik fra før add-on'et.";
+  else if (i.total || i.imported != null) {
+    const last = i.last_run ? new Date(i.last_run * 1000).toLocaleString("da-DK", { dateStyle: "medium", timeStyle: "short" }) : "";
+    text = `${fmt(i.total)} afspilninger er importeret${last ? `, senest ${last}` : ""}.` +
+      (i.imported != null ? ` Sidste kørsel tilføjede ${fmt(i.imported)} og sprang ${fmt(i.skipped)} over (allerede registreret eller under 1 minut).` : "") +
+      " Det er sikkert at importere igen – dubletter springes over.";
+  } else text = "Henter gamle afspilninger fra Jellyfins Playback Reporting-plugin, så statistikken også dækker tiden før add-on'et.";
+  el.innerHTML = text;
+}
+
+$("#import-btn").addEventListener("click", async () => {
+  $("#import-btn").disabled = true;
+  await fetch("api/import", { method: "POST" });
+  pollImport();
+});
+
+// Follow a running import until it is done, then reload the view with the new history. Only one at a time.
+async function pollImport() {
+  if (state.importPolling) return;
+  state.importPolling = true;
+  try {
+    do {
+      await new Promise((r) => setTimeout(r, 1500));
+      await loadMeta();
+      renderImport(state.meta);
+    } while (state.meta.import.running);
+  } finally {
+    state.importPolling = false;
+  }
+  refresh();
 }
 
 // --- detail pages ---------------------------------------------------------------

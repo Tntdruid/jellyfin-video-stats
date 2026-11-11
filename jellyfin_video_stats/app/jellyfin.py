@@ -47,6 +47,31 @@ class JellyfinClient:
         items = r.json().get("Items", [])
         return items[0] if items else None
 
+    async def items(self, ids: list) -> list:
+        """Several items in one call; ids that no longer exist are simply missing from the result."""
+        r = await self.client.get("/Items", params={"ids": ",".join(ids), "fields": ITEM_FIELDS, "enableImages": "false",
+                                                    "recursive": "true"})
+        r.raise_for_status()
+        return r.json().get("Items", [])
+
+    async def users(self) -> list:
+        r = await self.client.get("/Users")
+        r.raise_for_status()
+        return r.json()
+
+    async def playback_reporting(self, sql: str) -> Optional[list]:
+        """Rows from the Playback Reporting plugin's database, or None when the plugin isn't installed."""
+        r = await self.client.post("/user_usage_stats/submit_custom_query",
+                                   json={"CustomQueryString": sql, "ReplaceUserId": False}, timeout=120)
+        if r.status_code == 404:
+            return None
+        r.raise_for_status()
+        data = r.json()
+        if data.get("message") and not data.get("results") and "no data returned" not in data["message"]:
+            raise RuntimeError(f"Playback Reporting: {data['message'][:200]}")
+        cols = data.get("colums") or data.get("columns") or []  # the plugin really spells it "colums"
+        return [dict(zip(cols, row)) for row in data.get("results") or []]
+
     async def image(self, item_id: str, max_width: int = 300) -> Optional[httpx.Response]:
         r = await self.client.get(
             f"/Items/{item_id}/Images/Primary", params={"maxWidth": max_width, "quality": 85}

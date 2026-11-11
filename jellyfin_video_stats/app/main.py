@@ -15,7 +15,9 @@ import images
 import stats
 import views
 from collector import Collector
+import importer
 from config import load_settings
+from importer import Importer
 from jellyfin import JellyfinClient
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
@@ -24,7 +26,7 @@ log = logging.getLogger("main")
 
 settings = load_settings()
 STATIC = Path(__file__).parent / "static"
-state = {"collector": None, "client": None}
+state = {"collector": None, "client": None, "importer": None}
 
 
 @asynccontextmanager
@@ -37,6 +39,9 @@ async def lifespan(app: FastAPI):
         state.update(client=client, collector=collector)
         task = asyncio.create_task(collector.run())
         log.info("collecting from %s every %ss", settings.jellyfin_url, settings.poll_interval)
+        state["importer"] = Importer(settings, client)
+        if not db.get_meta("import_playback_reporting"):  # first start: pull in history once, if the plugin is there
+            state["import_task"] = asyncio.create_task(state["importer"].run())
     else:
         log.warning("jellyfin_url/api_key not set - collector disabled, serving existing data only")
     yield
@@ -83,7 +88,22 @@ def meta(request: Request):
             "poll_interval": settings.poll_interval,
             "last_error": c.state.last_error if c else None,
         },
+        "import": {
+            **importer.status,
+            "enabled": state["importer"] is not None,
+            "last_run": db.get_meta("import_playback_reporting"),
+            "total": db.query("SELECT COUNT(*) AS n FROM plays WHERE source = ?", [importer.SOURCE])[0]["n"],
+        },
     }
+
+
+@app.post("/api/import")
+async def run_import():
+    if not state["importer"]:
+        raise HTTPException(400, "Opsamlingen er ikke sat op (mangler Jellyfin URL/API-nøgle)")
+    if not importer.status["running"]:
+        state["import_task"] = asyncio.create_task(state["importer"].run())
+    return {"started": True}
 
 
 @app.get("/api/now")
@@ -95,8 +115,8 @@ def now_playing():
 @app.get("/api/latest")
 def latest():
     """Cheap change marker; the page polls it and reloads its data when it moves."""
-    row = db.query("SELECT MAX(id) AS play FROM plays")[0]
-    return {"marker": str(row["play"])}
+    row = db.query("SELECT MAX(id) AS play, COUNT(*) AS n FROM plays")[0]
+    return {"marker": f"{row['play']}-{row['n']}"}
 
 
 @app.get("/api/summary")

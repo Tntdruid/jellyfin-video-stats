@@ -32,6 +32,16 @@ Kører Jellyfin som add-on på samme maskine, kan du bruge Home Assistants IP-ad
 - **Binge** er flest afsnit af samme serie, som én bruger har set på én dag.
 - **Transcoding** registreres, hvis Jellyfin på noget tidspunkt under afspilningen transcodede videoen. Fanen **Afspilning** viser, hvilke klienter der transcoder, og hvorfor.
 
+## Gammel historik fra Playback Reporting
+
+Bruger du Jellyfins **Playback Reporting**-plugin, har det logget dine afspilninger, siden det blev installeret. Første gang add-on'et starter, henter det automatisk den historik, så statistikken også dækker tiden før add-on'et. Du kan se status og importere igen under fanen **Afspilning** nederst.
+
+- Det er sikkert at importere igen, fx efter add-on'et har været stoppet. Afspilninger, der allerede er registreret (samme bruger og titel med start inden for 15 minutter), springes over.
+- Pluginet ved ikke, hvor langt man nåede i en film. "Set færdig" bliver derfor anslået ud fra den tid, der er set.
+- Pluginet logger ikke opløsning, sprog eller årsager til transcoding, så de tal dækker kun tiden efter add-on'et.
+- Film og afsnit, der er slettet fra Jellyfin siden, kommer med under det navn, pluginet har gemt. For afsnit genskabes serie, sæson og afsnitsnummer.
+- Har du ikke pluginet, sker der ingenting. Det kan installeres under **Kontrolpanel → Plugins → Katalog**, men det har kun historik fra det tidspunkt, det blev installeret.
+
 ## YouTube og andre videoer
 
 Jellyfin kan ikke selv afspille YouTube, men videoer, du har hentet ned (fx med ytdl-sub, TubeArchivist eller yt-dlp), tælles med:
@@ -59,6 +69,6 @@ Hvis navnene er forskellige, kobler du dem under `user_map`.
 
 ## Bemærk
 
-- Jellyfin gemmer ikke selv en afspilningshistorik, så statistikken starter først, når add-on'et kører.
+- Jellyfin gemmer ikke selv en afspilningshistorik. Uden Playback Reporting-pluginet starter statistikken derfor først, når add-on'et kører.
 - Film, serieafsnit og videoer tælles med. Musik, musikvideoer og live-tv ignoreres.
 - Data gemmes i SQLite-filen `video_stats.db` i add-on'ets offentlige config-mappe. Via Samba ligger den under `app_configs/<id>_jellyfin_video_stats/` (`addon_configs` på ældre Home Assistant). Filen kommer med i Home Assistants backups.
