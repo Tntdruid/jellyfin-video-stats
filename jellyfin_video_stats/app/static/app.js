@@ -420,7 +420,26 @@ async function loadTech() {
   };
   $("#tech-lang").innerHTML = langList("Lyd", t.audio) + langList("Undertekster", t.subtitles);
   renderImport(state.meta);
+  renderHa(state.meta);
   if (state.meta.import.running) pollImport();
+}
+
+function renderHa(meta) {
+  const h = meta.home_assistant;
+  const parts = [];
+  if (!h.available) parts.push("Ikke forbundet til Home Assistant. Det sker automatisk, når add-on'et kører i Home Assistant.");
+  else {
+    if (h.last_error) parts.push(`⚠️ ${esc(h.last_error)}`);
+    parts.push(h.sensors_enabled
+      ? `Sensorer: ${fmt(h.sensors)} opdateres hvert halve minut${h.last_update ? `, senest ${new Date(h.last_update * 1000).toLocaleTimeString("da-DK", { hour: "2-digit", minute: "2-digit" })}` : ""}.`
+      : "Sensorer er slået fra (ha_sensors).");
+    parts.push(h.notify_enabled
+      ? `Besked om nye afsnit sendes via <code>${esc(h.notify_service)}</code> og som eventet <code>jellyfin_video_stats_new_episode</code>.${h.notified ? ` ${fmt(h.notified)} sendt siden start.` : ""}`
+      : "Besked om nye afsnit er slået fra (notify_new_episodes).");
+  }
+  $("#ha-status").innerHTML = parts.map((p) => `<div>${p}</div>`).join("");
+  $("#ha-hint").textContent = h.available && !h.last_error ? "forbundet" : "";
+  $("#ha-sensors").innerHTML = h.available && h.sensors_enabled ? (h.entities || []).map((e) => `<li><code>${esc(e)}</code></li>`).join("") : "";
 }
 
 function renderImport(meta) {

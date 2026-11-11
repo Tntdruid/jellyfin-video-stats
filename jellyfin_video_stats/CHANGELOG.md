@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0
+
+- Sensorer i Home Assistant: seetid i dag og denne uge (også pr. bruger), afspilles nu, transcodinger nu, serier i gang og senest set. Seetiden tæller det, der afspilles lige nu, med, så den kan bruges til grænser for skærmtid.
+- Besked om nye afsnit af serier, du følger, som notifikation i Home Assistant eller på telefonen via `notify_service`, og som eventet `jellyfin_video_stats_new_episode` til egne automationer.
+- Nye indstillinger: `ha_sensors`, `notify_new_episodes` og `notify_service`. Add-on'et kræver nu adgang til Home Assistants API (`homeassistant_api`).
+
 ## 0.3.1
 
 - Rettet: i 0.3.0 blev afsnit ikke gemt, når de var set færdige, fordi opsamleren gik ned. Film og videoer var ikke berørt.

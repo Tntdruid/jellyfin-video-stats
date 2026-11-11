@@ -14,6 +14,15 @@ configuration:
   video_folders:
     name: Videomapper
     description: Mapper med fx hentede YouTube-videoer. Film herfra tælles som videoer og grupperes efter kanal (studio i .nfo-filen). Én mappe pr. linje, fx "Youtube".
+  ha_sensors:
+    name: Sensorer i Home Assistant
+    description: Opretter sensorer med seetid i dag og denne uge (også pr. bruger), hvad der afspilles nu, transcodinger og serier i gang.
+  notify_new_episodes:
+    name: Besked om nye afsnit
+    description: Giver besked, når en serie, du følger, får nye afsnit i Jellyfin. Sender også eventet jellyfin_video_stats_new_episode til dine egne automationer.
+  notify_service:
+    name: Notifikationstjeneste
+    description: Fx notify.mobile_app_din_telefon. Lad den stå tom for en besked under Notifikationer i Home Assistant.
   user_map:
     name: Brugerkobling
     description: Kobler Home Assistant-brugere til Jellyfin-brugere, når navnene er forskellige. Én linje pr. bruger, fx "christian=Tntdruid".

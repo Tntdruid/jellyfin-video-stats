@@ -217,6 +217,10 @@ nav.seg a.on { background: var(--accent-soft); color: var(--accent); font-weight
 .season .meter { margin: 0; }
 .top li.unseen { opacity: .45; }
 
+#ha-status { display: grid; gap: 4px; }
+.entity-list { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.entity-list code, #ha-status code { font-size: 12px; background: var(--accent-soft); padding: 2px 6px; border-radius: 6px; }
+
 .import-row { display: flex; gap: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
 .import-row #import-status { flex: 1; min-width: 240px; }
 button.btn { font: inherit; cursor: pointer; padding: 7px 14px; }

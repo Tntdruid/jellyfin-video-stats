@@ -77,6 +77,12 @@ CREATE TABLE IF NOT EXISTS episode_played (
     PRIMARY KEY (user_id, item_id)
 );
 
+-- new episodes Home Assistant has already been told about
+CREATE TABLE IF NOT EXISTS notified_episodes (
+    item_id TEXT PRIMARY KEY,
+    at      INTEGER
+);
+
 CREATE TABLE IF NOT EXISTS meta (
     key   TEXT PRIMARY KEY,
     value TEXT

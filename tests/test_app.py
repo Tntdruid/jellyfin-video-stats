@@ -3,6 +3,7 @@
 Jellyfin is replaced by small fakes that answer like the real API.
 """
 import asyncio
+import time
 from datetime import datetime
 
 import pytest
@@ -250,3 +251,119 @@ def test_progress_counts_jellyfin_marks_and_skips_specials():
     p = progress.series_progress("tu", "tprog")[0]
     assert (p["seen"], p["total"]) == (2, 3)  # own play + Jellyfin mark; special and virtual left out
     assert p["next"]["key"] == "tp3"
+
+
+# --- Home Assistant -----------------------------------------------------------
+
+import ha  # noqa: E402
+
+
+class FakeHA:
+    def __init__(self):
+        self.states, self.services, self.events = {}, [], []
+
+    async def set_state(self, entity_id, state, attributes):
+        self.states[entity_id] = (str(state), attributes)
+
+    async def call_service(self, service, data):
+        self.services.append((service, data))
+
+    async def fire_event(self, event_type, data):
+        self.events.append((event_type, data))
+
+
+def test_sensors_are_published_and_only_resent_when_changed():
+    fake = FakeHA()
+    pub = ha.SensorPublisher(fake, None)
+    assert asyncio.run(pub.publish()) == len(fake.states)
+    for name in ("watch_time_today", "watch_time_week", "now_playing", "transcoding", "continue_watching", "last_watched"):
+        assert f"{ha.PREFIX}_{name}" in fake.states, name
+    assert f"{ha.PREFIX}_watch_time_today_christian" in fake.states  # one per user
+    assert int(fake.states[f"{ha.PREFIX}_continue_watching"][0]) >= 1
+    assert asyncio.run(pub.publish()) == 0  # nothing changed
+
+
+def test_slug_handles_danish_letters():
+    assert ha.slug("Gæst Øster Ål") == "gaest_oester_aal"
+
+
+def _series(series_id, episodes, seen, when):
+    db.execute("DELETE FROM series_episodes WHERE series_id = ?", [series_id])
+    for i, item_id in enumerate(episodes, 1):
+        db.execute("INSERT INTO series_episodes VALUES (?,?,?,?,?,?)", [item_id, series_id, 1, i, f"E{i}", 1800])
+    for item_id in seen:
+        db.insert_play({"item_id": item_id, "user_id": "tu", "user_name": "Test", "started_at": when, "ended_at": when + 1800,
+                        "watched": 1800, "counted": 1, "completed": 1})
+
+
+class FakeNewEpisodes:
+    def __init__(self):
+        self.items = []
+
+    async def recent_episodes(self, limit=100):
+        return self.items
+
+
+def test_new_episode_of_followed_series_is_announced_once():
+    long_ago = int(time.time()) - 400 * 86400
+    _series("tfol", ["tf1", "tf2"], ["tf1", "tf2"], long_ago)          # caught up, a year ago
+    _series("tnofol", ["tn1", "tn2", "tn3"], ["tn1"], long_ago)       # gave up after one episode
+    db.execute("DELETE FROM meta WHERE key = 'new_episodes_since'")
+    fake, jf = FakeHA(), FakeNewEpisodes()
+    watcher = ha.EpisodeWatcher(fake, jf, "")
+    jf.items = [{"Id": "told-before", "SeriesId": "tfol", "DateCreated": "2020-01-01T00:00:00.0000000Z"}]
+    assert asyncio.run(watcher.check()) == 0  # first run only sets the starting point
+    added = datetime.utcfromtimestamp(time.time() + 60).strftime("%Y-%m-%dT%H:%M:%S.0000000Z")
+    jf.items = [
+        {"Id": "tf3", "SeriesId": "tfol", "SeriesName": "Fulgt", "Name": "Ny", "ParentIndexNumber": 1, "IndexNumber": 3,
+         "DateCreated": added},
+        {"Id": "tn4", "SeriesId": "tnofol", "SeriesName": "Opgivet", "Name": "Ny", "ParentIndexNumber": 1,
+         "IndexNumber": 4, "DateCreated": added},
+    ]
+    assert asyncio.run(watcher.check()) == 1
+    (event, data), = fake.events
+    assert event == ha.EVENT and data["series"] == "Fulgt" and data["users"] == ["Test"]
+    assert data["episodes"][0]["episode"] == "S01E03"
+    (service, payload), = fake.services
+    assert service == "persistent_notification.create" and "Nyt afsnit af Fulgt" in payload["title"]
+    assert asyncio.run(watcher.check()) == 0 and len(fake.events) == 1  # not twice
+
+
+def test_notify_service_is_used_when_set():
+    fake = FakeHA()
+    asyncio.run(ha.EpisodeWatcher(fake, None, "mobile_app_telefon")._announce(
+        "s", [{"Id": "x", "SeriesName": "Serie", "Name": "A", "ParentIndexNumber": 2, "IndexNumber": 1}], ["Test"]))
+    assert fake.services[0][0] == "notify.mobile_app_telefon"
+
+
+def test_boolean_options_can_be_turned_off(tmp_path, monkeypatch):
+    import config
+    (tmp_path / "options.json").write_text('{"ha_sensors": false, "notify_new_episodes": false}', encoding="utf-8")
+    monkeypatch.setattr(config, "DATA_DIR", tmp_path)
+    s = config.load_settings()
+    assert s.ha_sensors is False and s.notify_new_episodes is False
+
+
+def test_home_assistant_api_calls():
+    import httpx
+    seen = []
+
+    def handler(request):
+        seen.append((request.method, request.url.path, request.headers["Authorization"], request.content))
+        return httpx.Response(401 if request.url.path.endswith("/forbidden") else 200, json={})
+
+    client = ha.HomeAssistant("http://supervisor/core/api", "tok")
+    client.client = httpx.AsyncClient(base_url="http://supervisor/core/api", transport=httpx.MockTransport(handler),
+                                      headers={"Authorization": "Bearer tok"})
+
+    async def go():
+        await client.set_state("sensor.x", 5, {"unit_of_measurement": "min"})
+        await client.call_service("notify.mobile_app_phone", {"message": "hej"})
+        await client.fire_event(ha.EVENT, {"series": "S"})
+        with pytest.raises(PermissionError):
+            await client.call_service("notify.forbidden", {})
+    asyncio.run(go())
+    assert [s[1] for s in seen[:3]] == ["/core/api/states/sensor.x", "/core/api/services/notify/mobile_app_phone",
+                                        f"/core/api/events/{ha.EVENT}"]
+    assert all(s[2] == "Bearer tok" for s in seen)
+    assert b'"state":"5"' in seen[0][3].replace(b" ", b"")

@@ -21,6 +21,9 @@ Kører Jellyfin som add-on på samme maskine, kan du bruge Home Assistants IP-ad
 | `poll_interval` | Antal sekunder mellem hvert tjek af, hvad der afspilles (3–60). |
 | `min_watch_percent` | Hvor stor en del af en film eller et afsnit der skal ses, før det tæller som set. 30 minutter tæller altid, så en lang film ikke kræver over en time. |
 | `video_folders` | Mapper med hentede YouTube-videoer eller lignende, standard `Youtube`. Film, hvis sti indeholder en mappe med det navn, tælles som videoer og grupperes efter kanal i stedet for at fylde i "Top film". Store og små bogstaver er ligegyldige. |
+| `ha_sensors` | Opretter sensorer i Home Assistant med seetid, hvad der afspilles, transcodinger og serier i gang (standard: til). |
+| `notify_new_episodes` | Giver besked, når en serie, du følger, får nye afsnit (standard: til). |
+| `notify_service` | Valgfri. Fx `notify.mobile_app_din_telefon`. Tom betyder en besked under Notifikationer i Home Assistant. |
 | `user_map` | Valgfri. Kobler Home Assistant-brugere til Jellyfin-brugere, når navnene er forskellige. Én linje pr. bruger, fx `christian=Tntdruid`. |
 
 ## Hvad tæller hvordan?
@@ -31,6 +34,69 @@ Kører Jellyfin som add-on på samme maskine, kan du bruge Home Assistants IP-ad
 - **Seetid** er den tid, der faktisk er afspillet. Pauser tæller ikke med, og spoling forvirrer ikke tallet.
 - **Binge** er flest afsnit af samme serie, som én bruger har set på én dag.
 - **Transcoding** registreres, hvis Jellyfin på noget tidspunkt under afspilningen transcodede videoen. Fanen **Afspilning** viser, hvilke klienter der transcoder, og hvorfor.
+
+## Home Assistant: sensorer og besked om nye afsnit
+
+Add-on'et taler selv med Home Assistant, så der skal ikke sættes noget op. Status og en liste over sensorerne finder du nederst på fanen **Afspilning**.
+
+### Sensorer
+
+| Sensor | Værdi | Attributter |
+|---|---|---|
+| `sensor.jellyfin_video_stats_watch_time_today` | Minutter set i dag, alle brugere | `per_user` |
+| `sensor.jellyfin_video_stats_watch_time_today_<bruger>` | Minutter set i dag af én bruger, fx `…_today_christian` | |
+| `sensor.jellyfin_video_stats_watch_time_week` | Minutter set denne uge (fra mandag) | `per_user` |
+| `sensor.jellyfin_video_stats_now_playing` | Antal afspilninger lige nu | `sessions` (bruger, enhed, titel, pause, transcoding, procent), `titles` |
+| `sensor.jellyfin_video_stats_transcoding` | Antal afspilninger, der transcodes lige nu | `sessions` |
+| `sensor.jellyfin_video_stats_continue_watching` | Antal serier i gang | `series` (næste afsnit, set/i alt, minutter tilbage) |
+| `sensor.jellyfin_video_stats_last_watched` | Det senest sete | `user`, `watched_at` |
+
+Seetiden tæller også det, der afspilles lige nu, så den kan bruges til grænser for skærmtid. Sensorerne opdateres hvert halve minut. De er almindelige tilstande, ikke enheder med et unikt id, så de kan ikke omdøbes i Home Assistant. Vil du have et andet navn, kan du lave en template-sensor. Slå dem fra med `ha_sensors: false`.
+
+### Besked om nye afsnit
+
+Hver halve time tjekker add-on'et, om der er kommet nye afsnit i Jellyfin. Hører afsnittet til en serie, nogen følger, sender det en besked. Man følger en serie, hvis man har set alle tidligere afsnit, eller hvis man har set i den inden for de sidste 60 dage.
+
+- Uden `notify_service` kommer beskeden under **Notifikationer** i Home Assistant.
+- Med fx `notify_service: notify.mobile_app_din_telefon` kommer den på telefonen.
+- Samtidig sendes eventet `jellyfin_video_stats_new_episode` med `series`, `series_id`, `episodes` (fx `S04E01` og navn) og `users`, så du kan bygge dine egne automationer.
+- Første gang add-on'et starter, sendes der ikke besked om afsnit, der allerede ligger i Jellyfin.
+
+Slå det fra med `notify_new_episodes: false`.
+
+### Eksempler
+
+Besked på telefonen, når børnene har set mere end to timer i dag:
+
+```yaml
+automation:
+  - alias: "Skærmtid: to timer"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.jellyfin_video_stats_watch_time_today_gaest
+        above: 120
+    action:
+      - service: notify.mobile_app_din_telefon
+        data:
+          message: "Gæst har set {{ states('sensor.jellyfin_video_stats_watch_time_today_gaest') }} minutter i dag."
+```
+
+Send kun besked om nye afsnit til den person, der følger serien (sæt `notify_new_episodes` til, og lad `notify_service` stå tom, hvis I ikke også vil have den fælles besked):
+
+```yaml
+automation:
+  - alias: "Nye afsnit til Christian"
+    trigger:
+      - platform: event
+        event_type: jellyfin_video_stats_new_episode
+    condition:
+      - "{{ 'Christian' in trigger.event.data.users }}"
+    action:
+      - service: notify.mobile_app_christians_telefon
+        data:
+          title: "Nyt i {{ trigger.event.data.series }}"
+          message: "{{ trigger.event.data.episodes | map(attribute='episode') | join(', ') }} er klar."
+```
 
 ## Fremdrift i serier
 

@@ -21,10 +21,22 @@ class Settings:
     video_folders: List[str] = field(default_factory=lambda: ["Youtube"])
     # Home Assistant user -> Jellyfin user, lowercased, for people whose names differ
     user_map: Dict[str, str] = field(default_factory=dict)
+    # publish sensors to Home Assistant, and tell it about new episodes of followed series
+    ha_sensors: bool = True
+    notify_new_episodes: bool = True
+    # e.g. "notify.mobile_app_phone"; empty = a persistent notification in Home Assistant
+    notify_service: str = ""
+    # Home Assistant Core API: the Supervisor's proxy in the add-on, HA_URL/HA_TOKEN in local development
+    ha_url: str = ""
+    ha_token: str = ""
 
     @property
     def collector_enabled(self) -> bool:
         return bool(self.jellyfin_url and self.api_key)
+
+    @property
+    def ha_enabled(self) -> bool:
+        return bool(self.ha_url and self.ha_token)
 
 
 def load_settings() -> Settings:
@@ -36,6 +48,14 @@ def load_settings() -> Settings:
     def pick(key, default):
         return options.get(key) or os.environ.get(key.upper()) or default
 
+    def flag(key, default: bool) -> bool:
+        """Booleans can't use pick(): an option set to false must stay false."""
+        if key in options:
+            return bool(options[key])
+        env = os.environ.get(key.upper())
+        return env.strip().lower() in ("1", "true", "yes", "on") if env is not None else default
+
+    supervisor_token = os.environ.get("SUPERVISOR_TOKEN", "")
     return Settings(
         jellyfin_url=str(pick("jellyfin_url", "")).rstrip("/"),
         api_key=str(pick("api_key", "")).strip(),
@@ -44,6 +64,11 @@ def load_settings() -> Settings:
         video_folders=[str(f) for f in options["video_folders"]] if "video_folders" in options
         else [f for f in os.environ.get("VIDEO_FOLDERS", "Youtube").split(",") if f.strip()],
         user_map=parse_user_map(options.get("user_map") or os.environ.get("USER_MAP", "").split(",")),
+        ha_sensors=flag("ha_sensors", True),
+        notify_new_episodes=flag("notify_new_episodes", True),
+        notify_service=str(pick("notify_service", "")).strip(),
+        ha_url=os.environ.get("HA_URL", "http://supervisor/core/api" if supervisor_token else "").rstrip("/"),
+        ha_token=os.environ.get("HA_TOKEN", supervisor_token),
     )
 
 

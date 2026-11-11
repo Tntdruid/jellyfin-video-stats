@@ -14,6 +14,15 @@ configuration:
   video_folders:
     name: Video folders
     description: Folders holding e.g. downloaded YouTube videos. Movies in them count as videos, grouped by channel (studio in the .nfo). One folder per line, e.g. "Youtube".
+  ha_sensors:
+    name: Sensors in Home Assistant
+    description: Creates sensors for watch time today and this week (also per user), what is playing, transcodes and series in progress.
+  notify_new_episodes:
+    name: New episode notifications
+    description: Notifies you when a series you follow gets new episodes in Jellyfin. Also fires the jellyfin_video_stats_new_episode event for your own automations.
+  notify_service:
+    name: Notification service
+    description: E.g. notify.mobile_app_your_phone. Leave empty for a notification under Notifications in Home Assistant.
   user_map:
     name: User mapping
     description: Links Home Assistant users to Jellyfin users when their names differ. One line per user, e.g. "christian=Tntdruid".

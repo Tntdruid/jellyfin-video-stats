@@ -65,6 +65,15 @@ class JellyfinClient:
         r.raise_for_status()
         return r.json().get("Items", [])
 
+    async def recent_episodes(self, limit: int = 100) -> list:
+        """Episodes most recently added to the library, newest first."""
+        r = await self.client.get("/Items", params={
+            "IncludeItemTypes": "Episode", "Recursive": "true", "SortBy": "DateCreated", "SortOrder": "Descending",
+            "Limit": str(limit), "Fields": "DateCreated", "enableImages": "false",
+        })
+        r.raise_for_status()
+        return r.json().get("Items", [])
+
     async def users(self) -> list:
         r = await self.client.get("/Users")
         r.raise_for_status()

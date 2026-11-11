@@ -15,6 +15,7 @@ A Home Assistant add-on with viewing statistics for movies, series and videos in
 - Imports old history from the Playback Reporting plugin, so the statistics don't start from zero
 - Watch time per day, week and month, split into movies, series and videos and compared with the previous period
 - Series progress: "continue watching" with the next episode, finished series and progress per season
+- Home Assistant sensors (watch time today per user, now playing, transcodes, series in progress) and notifications when a series you follow gets new episodes
 - Top series, movies and actors with posters, which are stored locally and survive the file being deleted
 - YouTube and other videos grouped by channel, also when Jellyfin sees them as movies
 - Genres over time and a heatmap of when you watch
@@ -71,6 +72,7 @@ Home Assistant-add-on med seerstatistik for film, serier og videoer i Jellyfin. 
 - Henter gammel historik fra Playback Reporting-pluginet, så statistikken ikke starter fra nul
 - Seetid pr. dag, uge og måned, delt op i film, serier og videoer og sammenlignet med forrige periode
 - Fremdrift i serier: "Fortsæt med at se" med næste afsnit, serier gjort færdige og fremdrift pr. sæson
+- Sensorer i Home Assistant (seetid i dag pr. bruger, afspilles nu, transcodinger, serier i gang) og besked, når en serie, du følger, får nye afsnit
 - Top serier, film og skuespillere med plakater, der gemmes lokalt og overlever, at filen slettes
 - YouTube- og andre videoer grupperet efter kanal, også når Jellyfin ser dem som film
 - Genrer over tid og heatmap over, hvornår du ser

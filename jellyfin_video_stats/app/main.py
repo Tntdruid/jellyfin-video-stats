@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 import db
+import ha
 import images
 import progress
 import stats
@@ -27,7 +28,7 @@ log = logging.getLogger("main")
 
 settings = load_settings()
 STATIC = Path(__file__).parent / "static"
-state = {"collector": None, "client": None, "importer": None}
+state = {"collector": None, "client": None, "importer": None, "ha": None, "ha_tasks": []}
 
 
 @asynccontextmanager
@@ -41,6 +42,15 @@ async def lifespan(app: FastAPI):
         task = asyncio.create_task(collector.run())
         log.info("collecting from %s every %ss", settings.jellyfin_url, settings.poll_interval)
         state["refresh_task"] = asyncio.create_task(progress.Refresher(client).run())
+        if settings.ha_enabled and (settings.ha_sensors or settings.notify_new_episodes):
+            hass = ha.HomeAssistant(settings.ha_url, settings.ha_token)
+            state["ha"] = hass
+            if settings.ha_sensors:
+                state["ha_tasks"].append(asyncio.create_task(ha.SensorPublisher(hass, collector).run()))
+            if settings.notify_new_episodes:
+                state["ha_tasks"].append(asyncio.create_task(ha.EpisodeWatcher(hass, client, settings.notify_service).run()))
+            log.info("Home Assistant: sensors %s, new-episode notifications %s",
+                     "on" if settings.ha_sensors else "off", "on" if settings.notify_new_episodes else "off")
         state["importer"] = Importer(settings, client)
         if not db.get_meta("import_playback_reporting"):  # first start: pull in history once, if the plugin is there
             state["import_task"] = asyncio.create_task(state["importer"].run())
@@ -50,6 +60,10 @@ async def lifespan(app: FastAPI):
     if task:
         task.cancel()
         state["refresh_task"].cancel()
+        for t in state["ha_tasks"]:
+            t.cancel()
+        if state.get("ha"):
+            await state["ha"].close()
         state["collector"].flush()
         await state["client"].close()
 
@@ -90,6 +104,13 @@ def meta(request: Request):
             "last_poll": c.state.last_poll if c else None,
             "poll_interval": settings.poll_interval,
             "last_error": c.state.last_error if c else None,
+        },
+        "home_assistant": {
+            **ha.status,
+            "available": settings.ha_enabled,
+            "sensors_enabled": settings.ha_sensors,
+            "notify_enabled": settings.notify_new_episodes,
+            "notify_service": settings.notify_service or "persistent_notification",
         },
         "import": {
             **importer.status,

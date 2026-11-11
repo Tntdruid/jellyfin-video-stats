@@ -1,5 +1,5 @@
 name: Jellyfin Video Stats
-version: "0.3.1"
+version: "0.4.0"
 slug: jellyfin_video_stats
 description: Seerstatistik for film og serier i Jellyfin – top-lister, binge, heatmap og transcoding
 url: https://github.com/Tntdruid/jellyfin-video-stats
@@ -10,6 +10,7 @@ init: false
 ingress: true
 panel_icon: mdi:movie-open-play
 panel_title: Videostatistik
+homeassistant_api: true
 map:
   - addon_config:rw
 options:
@@ -19,6 +20,9 @@ options:
   min_watch_percent: 50
   video_folders:
     - Youtube
+  ha_sensors: true
+  notify_new_episodes: true
+  notify_service: ""
   user_map: []
 schema:
   jellyfin_url: url
@@ -27,5 +31,8 @@ schema:
   min_watch_percent: int(10,100)
   video_folders:
     - str
+  ha_sensors: bool
+  notify_new_episodes: bool
+  notify_service: str?
   user_map:
     - str
