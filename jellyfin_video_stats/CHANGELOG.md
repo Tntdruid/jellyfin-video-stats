@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1
+
+- Rettet: i 0.3.0 blev afsnit ikke gemt, når de var set færdige, fordi opsamleren gik ned. Film og videoer var ikke berørt.
+- Tests, tjek af add-on-konfigurationen og byg af imaget for amd64 og aarch64 kører nu automatisk på GitHub ved hvert push.
+
 ## 0.3.0
 
 - Fremdrift i serier: "Fortsæt med at se" med næste afsnit og tid tilbage, "Gjort færdig" og fremdrift pr. sæson på seriesiden, hvor alle afsnit vises, også de usete.

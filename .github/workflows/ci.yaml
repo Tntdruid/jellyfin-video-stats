@@ -1,0 +1,85 @@
+# Runs on every push and pull request, so a version that doesn't build or start never reaches Home Assistant's
+# store. Home Assistant builds the add-on itself from the Dockerfile; this does the same for both architectures.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Add-on config og kode
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tjek add-on-konfigurationen
+        uses: frenck/action-addon-linter@v2
+        with:
+          path: ./jellyfin_video_stats
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff==0.8.4
+      - name: Tjek Python-koden for fejl
+        run: ruff check --select F --target-version py312 jellyfin_video_stats/app dev tests
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"  # same as the Docker image
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - run: python -m pytest -v tests
+        env:
+          TZ: Europe/Copenhagen
+
+  build:
+    name: Byg (${{ matrix.arch }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+          - arch: aarch64
+            platform: linux/arm64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Byg imaget
+        uses: docker/build-push-action@v6
+        with:
+          context: ./jellyfin_video_stats
+          platforms: ${{ matrix.platform }}
+          push: false
+          load: true
+          tags: jellyfin-video-stats:test
+          cache-from: type=gha,scope=${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
+      - name: Start containeren og tjek at siden svarer
+        run: |
+          mkdir -p data && echo '{}' > data/options.json
+          docker run -d --name addon --platform ${{ matrix.platform }} -p 8099:8099 -v "$PWD/data:/data" jellyfin-video-stats:test
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:8099/api/meta > /dev/null; then break; fi
+            sleep 2
+          done
+          curl -fsS http://localhost:8099/ | grep -q Videostatistik
+          curl -fsS http://localhost:8099/static/echarts.min.js > /dev/null
+          curl -fsS http://localhost:8099/api/summary
+          docker logs addon
+      - name: Vis loggen ved fejl
+        if: failure()
+        run: docker logs addon || true

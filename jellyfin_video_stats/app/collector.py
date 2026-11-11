@@ -175,7 +175,7 @@ class Collector:
         needed = COUNT_CAP
         if play.duration:
             needed = min(play.duration * self.settings.min_watch_percent / 100, COUNT_CAP)
-        progress = min(play.max_position / play.duration, 1.0) if play.duration else None
+        reached = min(play.max_position / play.duration, 1.0) if play.duration else None
         db.insert_play({
             "item_id": play.item_id,
             "user_id": play.user_id,
@@ -186,9 +186,9 @@ class Collector:
             "ended_at": int(now),
             "watched": round(watched, 1),
             "duration": play.duration,
-            "progress": round(progress, 3) if progress is not None else None,
+            "progress": round(reached, 3) if reached is not None else None,
             "counted": int(watched >= needed),
-            "completed": int(progress is not None and progress >= COMPLETED_AT),
+            "completed": int(reached is not None and reached >= COMPLETED_AT),
             **play.tech,
         })
         self.state.plays_recorded += 1

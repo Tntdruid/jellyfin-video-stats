@@ -1,5 +1,7 @@
 # Jellyfin Video Stats
 
+[![CI](https://github.com/Tntdruid/jellyfin-video-stats/actions/workflows/ci.yaml/badge.svg)](https://github.com/Tntdruid/jellyfin-video-stats/actions/workflows/ci.yaml)
+
 Home Assistant-add-on med seerstatistik for film og serier i Jellyfin. Det er video-søsteren til [Jellyfin Music Stats](https://github.com/Tntdruid/jellyfin-music-stats).
 
 - Henter gammel historik fra Playback Reporting-pluginet, så statistikken ikke starter fra nul
@@ -39,4 +41,13 @@ curl -L -o jellyfin_video_stats/app/static/echarts.min.js https://cdn.jsdelivr.n
 .venv/Scripts/python dev/run_demo.py
 ```
 
-Åbn derefter http://localhost:8099. Hvis du sætter `JELLYFIN_URL` og `API_KEY` som miljøvariabler, opsamler den lokale udgave også rigtige data.
+Åbn derefter http://localhost:8099.
+
+Tests køres med:
+
+```bash
+.venv/Scripts/pip install -r requirements-dev.txt
+.venv/Scripts/python -m pytest tests
+```
+
+Ved hvert push kører GitHub Actions tests og tjekker add-on-konfigurationen. Imaget bygges og startes for både amd64 og aarch64, så en version, der ikke virker, bliver opdaget, før Home Assistant prøver at installere den. Hvis du sætter `JELLYFIN_URL` og `API_KEY` som miljøvariabler, opsamler den lokale udgave også rigtige data.

@@ -97,8 +97,8 @@ class Refresher:
                   (e.get("RunTimeTicks") or 0) / 10_000_000 or None) for e in kept],
             )
             if users:
-                conn.executemany(f"DELETE FROM episode_played WHERE user_id = ? AND item_id IN "
-                                 f"(SELECT item_id FROM series_episodes WHERE series_id = ?)",
+                conn.executemany("DELETE FROM episode_played WHERE user_id = ? AND item_id IN "
+                                 "(SELECT item_id FROM series_episodes WHERE series_id = ?)",
                                  [(u, series_id) for u in users])
             conn.executemany("INSERT OR REPLACE INTO episode_played (user_id, item_id, last_played) VALUES (?,?,?)", played)
             conn.execute(
