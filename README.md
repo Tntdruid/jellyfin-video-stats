@@ -41,7 +41,7 @@ curl -L -o jellyfin_video_stats/app/static/echarts.min.js https://cdn.jsdelivr.n
 .venv/Scripts/python dev/run_demo.py
 ```
 
-Åbn derefter http://localhost:8099.
+Åbn derefter http://localhost:8099. Hvis du sætter `JELLYFIN_URL` og `API_KEY` som miljøvariabler, opsamler den lokale udgave også rigtige data.
 
 Tests køres med:
 
@@ -50,4 +50,12 @@ Tests køres med:
 .venv/Scripts/python -m pytest tests
 ```
 
-Ved hvert push kører GitHub Actions tests og tjekker add-on-konfigurationen. Imaget bygges og startes for både amd64 og aarch64, så en version, der ikke virker, bliver opdaget, før Home Assistant prøver at installere den. Hvis du sætter `JELLYFIN_URL` og `API_KEY` som miljøvariabler, opsamler den lokale udgave også rigtige data.
+Ved hvert push kører GitHub Actions tests og tjekker add-on-konfigurationen. Imaget bygges og startes for både amd64 og aarch64, så en version, der ikke virker, bliver opdaget, før Home Assistant prøver at installere den.
+
+<!-- jellyfin-projects:start -->
+## Flere Jellyfin-projekter
+
+- **[Jellyfin Music Stats](https://github.com/Tntdruid/jellyfin-music-stats)** – Home Assistant-add-on med lyttestatistik for musik: top-lister, genrer, humør, Wrapped
+- **[Episode Title Fixer](https://github.com/Tntdruid/jellyfin-plugin-episode-title-fixer)** – Jellyfin-plugin, der erstatter pladsholdere som "Afsnit 11" med afsnittets originale titel
+- **[Auto Artist Playlists](https://github.com/Tntdruid/jellyfin-plugin-auto-artist-playlists)** – Jellyfin-plugin, der giver hjerte til de sange, du hører, og samler dem i en playliste pr. kunstner
+<!-- jellyfin-projects:end -->
