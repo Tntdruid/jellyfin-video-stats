@@ -4,7 +4,7 @@ Jellyfin is replaced by small fakes that answer like the real API.
 """
 import asyncio
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 from fastapi.testclient import TestClient
@@ -313,7 +313,7 @@ def test_new_episode_of_followed_series_is_announced_once():
     watcher = ha.EpisodeWatcher(fake, jf, "")
     jf.items = [{"Id": "told-before", "SeriesId": "tfol", "DateCreated": "2020-01-01T00:00:00.0000000Z"}]
     assert asyncio.run(watcher.check()) == 0  # first run only sets the starting point
-    added = datetime.utcfromtimestamp(time.time() + 60).strftime("%Y-%m-%dT%H:%M:%S.0000000Z")
+    added = datetime.fromtimestamp(time.time() + 60, timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.0000000Z")
     jf.items = [
         {"Id": "tf3", "SeriesId": "tfol", "SeriesName": "Fulgt", "Name": "Ny", "ParentIndexNumber": 1, "IndexNumber": 3,
          "DateCreated": added},
